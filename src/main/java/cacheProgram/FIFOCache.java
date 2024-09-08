@@ -1,7 +1,16 @@
 package cacheProgram;
 
-public class FIFOCache implements Cache {
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class FIFOCache implements Cache { // First-In, First-Out
+    private final int capacity;
+    private final Map<String, Integer> cache;
     public FIFOCache(int capacity) {
+        this.capacity = capacity;
+        this.cache = new LinkedHashMap<>(capacity,0.75f, false) {
+
+        }
     }
 
     @Override

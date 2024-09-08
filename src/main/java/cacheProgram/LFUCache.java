@@ -1,6 +1,6 @@
 package cacheProgram;
 
-public class LFUCache implements Cache {
+public class LFUCache implements Cache { // Least Frequently Used
     public LFUCache(int capacity) {
     }
 

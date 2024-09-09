@@ -26,7 +26,8 @@ public class LRUCache implements Cache { // Least Recently Used
     @Override
     public int get(String key) {
        // return cache.get(key);  since get could return null use getOrDefault
-        return cache.getOrDefault(key, -1);
+        return cache.getOrDefault(key, -1);// The access order update happens implicitly due to the LinkedHashMap's access-order feature.
+        // You don’t need to manually update the order in this implementation; the LinkedHashMap handles it internally.
     }
 
     @Override

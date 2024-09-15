@@ -1,15 +1,26 @@
 package cacheProgram;
 
-public class CacheFactory {
-    public static Cache createCache(String type, int capacity) {
-        if ("LRU".equalsIgnoreCase(type)) {
-            return new LRUCache(capacity);
-        } else if ("FIFO".equalsIgnoreCase(type)) {
-            return new FIFOCache(capacity);
-        } else if ("LFU".equalsIgnoreCase(type)) {
-            return new LFUCache(capacity);
-        }
-        return null;
-    }
+import java.text.MessageFormat;
 
+public class CacheFactory {
+    public static ICache createCacheInstance(CacheTypeEnum type, int capacity) {
+        switch (type) {
+            case CacheTypeEnum.FIFO -> {
+                return new FIFOCache(capacity);
+            }
+            case CacheTypeEnum.LFU -> {
+                LFUCacheBuilder lfuCacheBuilder = new LFUCacheBuilder().setCapacity(capacity).setServerName("localhost:8080");
+                return lfuCacheBuilder.build();
+            }
+            case CacheTypeEnum.LRU -> {
+                return new LRUCache(capacity);
+            }
+            default -> {
+                System.out.println(MessageFormat.format("cache with type {0} is not implemented yet.", type));
+                return null;
+            }
+
+        }
+
+    }
 }

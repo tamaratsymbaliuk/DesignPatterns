@@ -1,85 +1,106 @@
 package cacheProgram;
 
+import java.text.MessageFormat;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-public class LFUCache implements Cache { // Least Frequently Used
-    private final int capacity;
-    private final Map<String, Integer> cache; // Stores key-value pairs
-    private final Map<String, Integer> frequencyMap; // Tracks the frequency of each key
-    private final PriorityQueue<CacheEntry> frequencyQueue; // Min-heap to evict least frequently used
+public class LFUCache implements ICache { // Least Frequently Used
+    private int capacity;
+    private String serverName;
+    private final Map<String, LFUCacheItem> keyToCacheItemMap; // {key:LFUCacheItem}  cache: {key1:{6, 2}}, {key2:{2, 1}}, {key3:{3, 2}}
+    private final PriorityQueue<LFUCacheItem> keyFrequenciesMinHeap; // {LFUCacheItem} [{key2: 1}, {key1: 2}, {key3: 2}] - frequencies heap
 
-    public LFUCache(int capacity) {
-        this.capacity = capacity;
-        this.cache = new HashMap<>();
-        this.frequencyMap = new HashMap<>();
-        this.frequencyQueue = new PriorityQueue<>((a, b) -> a.frequency - b.frequency); // Min-heap based on frequency
+    public LFUCache() {
+        this.capacity = 10; // by default
+        this.keyToCacheItemMap = new HashMap<>();
+        this.keyFrequenciesMinHeap = new PriorityQueue<>(Comparator.comparingInt(value -> value.getFrequency())); // it only sorts when you add/remove
     }
 
     @Override
-    public void put(String key, int value) {
-        if (cache.size() >= capacity) {
-            // Evict the least frequently used key
-            CacheEntry lfuEntry = frequencyQueue.poll();
-            if (lfuEntry != null) {
-                cache.remove(lfuEntry.key);
-                frequencyMap.remove(lfuEntry.key);
-            }
+    public void put(String key, Integer value) {
+        // If the key is already in our cache,
+        // Let's update its value and increase its frequency
+        if (containsKey(key)) {
+            LFUCacheItem node = keyToCacheItemMap.get(key);
+            LFUCacheItem clonedNode = node.clone();
+            clonedNode.setValue(value);
+            keyToCacheItemMap.put(key, clonedNode);
+            increaseCacheItemFrequency(node, clonedNode);
+            return;
         }
-        cache.put(key, value); //  add new key-value pair to the cache
-        frequencyMap.put(key, frequencyMap.getOrDefault(key, 0) + 1); // Update frequency count
-        frequencyQueue.offer(new CacheEntry(key, frequencyMap.get(key)));// Add to the frequency queue
+        // If the key is new, we want to add it to cache.
+        // Before that, let's check for capacity.
+        // if the elements size is equal to it, let's remove it from the heap and the map.
+        while (getSize() >= capacity) {
+            LFUCacheItem nodeWithMinFrequency = keyFrequenciesMinHeap.poll();
+            keyToCacheItemMap.remove(nodeWithMinFrequency.getKey());
+        }
+        // Let's add new item to the heap and the map with a default frequency.
+        LFUCacheItem nodeToAdd = new LFUCacheItem(key, value);
+        keyToCacheItemMap.put(key, nodeToAdd);
+        keyFrequenciesMinHeap.add(nodeToAdd);
     }
 
     @Override
     public int get(String key) {
-        if (!cache.containsKey(key)) {
-            return -1; // key not found
+        // If we use the cache item from the cache,
+        // let's increase its frequency
+        if (containsKey(key)) {
+            LFUCacheItem node = keyToCacheItemMap.get(key);
+            LFUCacheItem clonedNode = node.clone();
+            keyToCacheItemMap.put(key, clonedNode);
+            increaseCacheItemFrequency(node, clonedNode);
+            return clonedNode.getValue();
         }
-            // Increment frequency count
-            frequencyMap.put(key, frequencyMap.get(key) + 1);
-            frequencyQueue.offer(new CacheEntry(key, frequencyMap.get(key))); // Update frequency in the queue
-
-            return cache.get(key); // Return the value associated with the key
+        System.out.println(MessageFormat.format("ERROR: Key {0} is not in cache.", key));
+        return 0;
         }
-
 
         @Override
         public void remove(String key) {
-            cache.remove(key); // Remove the entry from the cache
-            frequencyMap.remove(key); // Remove the key from frequency map
-            frequencyQueue.removeIf(entry -> entry.key.equals(key)); // Remove the key from the frequency queue
+             if(containsKey(key)) {
+                 LFUCacheItem node = keyToCacheItemMap.get(key);
+                 keyToCacheItemMap.remove(key);
+                 keyFrequenciesMinHeap.remove(node);
+             } else {
+                 System.out.println(MessageFormat.format("ERROR: Key {0} is not in the cache.", key));
+             }
         }
 
         @Override
         public void clear() {
-            cache.clear(); // Clear all key-value pairs in the cache
-            frequencyMap.clear(); // Clear the frequency map
-            frequencyQueue.clear(); // Clear the frequency queue
+            keyToCacheItemMap.clear();
+            keyFrequenciesMinHeap.clear();
         }
 
         @Override
-        public int size () {
-            return cache.size();
+        public int getSize() {
+            return keyToCacheItemMap.size();
         }
 
         @Override
         public boolean containsKey (String key){
-            return cache.containsKey(key);
+            return keyToCacheItemMap.containsKey(key);
+        }
+        public void setCapacity(int capacity) {
+            this.capacity = capacity;
         }
 
-
-        // Inner class to represent an entry in the LFU cache
-        private static class CacheEntry {
-            String key;
-            int frequency;
-
-            CacheEntry(String key, int frequency) {
-                this.key = key;
-                this.frequency = frequency;
-            }
-
-        }
+       public void setServerName(String serverName) {
+        this.serverName = serverName;
     }
+
+    // cache.put("key1", 1); // key1:1,  freq 1
+    // cache.put("key1", 6); // key1:6    freq 2
+    // cache.put("key2", 2); // key1:6, key2:2 freq 1
+    // cache.put("key3", 3); // cache: key1:6, key2:2, key3:3 freq 1  [key1, key2, key3]
+    // cache.get("key3"); // get key3  let's remove key 3 -> [key1, key2] -> and add new node with key3 key and +1 freq [key1, key2, key3]
+    private void increaseCacheItemFrequency(LFUCacheItem nodeToDelete, LFUCacheItem nodeToAdd) {
+        keyFrequenciesMinHeap.remove(nodeToDelete);
+        nodeToAdd.setFrequency(nodeToAdd.getFrequency() + 1);
+        keyFrequenciesMinHeap.add(nodeToAdd);
+    }
+}
 

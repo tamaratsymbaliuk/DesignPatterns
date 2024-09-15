@@ -1,9 +1,10 @@
 package cacheProgram;
 
+import java.text.MessageFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class LRUCache implements Cache { // Least Recently Used
+public class LRUCache implements ICache { // Least Recently Used
     private final int capacity;
     private final Map<String, Integer> cache;
 
@@ -19,20 +20,26 @@ public class LRUCache implements Cache { // Least Recently Used
     }
 
     @Override
-    public void put(String key, int value) {
+    public void put(String key, Integer value) {
         cache.put(key, value);
     }
 
     @Override
     public int get(String key) {
-       // return cache.get(key);  since get could return null use getOrDefault
-        return cache.getOrDefault(key, -1);// The access order update happens implicitly due to the LinkedHashMap's access-order feature.
-        // You don’t need to manually update the order in this implementation; the LinkedHashMap handles it internally.
+        if (!containsKey(key)) {
+            System.out.println(MessageFormat.format("ERROR: Key {0} is not in cache.", key));
+            return 0;
+        }
+        return cache.get(key);
     }
 
     @Override
     public void remove(String key) {
-        cache.remove(key); // here we don't worry about null in remove method of Java's Map If the key doesn't exist, nothing happens—there's no error or exception thrown, and it simply does nothing.
+        if (!containsKey(key)) {
+            System.out.println(MessageFormat.format("ERROR: Key {0} is not in cache.", key));
+        } else {
+            cache.remove(key);
+        }
     }
 
     @Override
@@ -41,7 +48,7 @@ public class LRUCache implements Cache { // Least Recently Used
     }
 
     @Override
-    public int size() {
+    public int getSize() {
         return cache.size();
     }
 

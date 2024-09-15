@@ -1,4 +1,4 @@
-package cacheProgram;
+package cacheProgramCreational;
 
 // Defines methods for Cache
 public interface ICache {

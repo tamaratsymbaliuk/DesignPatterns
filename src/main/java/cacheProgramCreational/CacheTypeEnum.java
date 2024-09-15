@@ -1,4 +1,4 @@
-package cacheProgram;
+package cacheProgramCreational;
 
 public enum CacheTypeEnum {
     FIFO,

@@ -6,6 +6,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+/**
+ * Implementation of a Least Frequently Used (LFU) cache.
+ * This cache evicts the least frequently accessed elements when it reaches its capacity.
+ */
 public class LFUCache implements ICache { // Least Frequently Used
     private int capacity;
     private String serverName;

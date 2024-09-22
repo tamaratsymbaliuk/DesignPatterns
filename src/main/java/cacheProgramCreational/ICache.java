@@ -1,8 +1,9 @@
 package cacheProgramCreational;
 
-// Defines methods for Cache
-public interface ICache {
-    void put(String key, Integer value);
+/**
+ * Interface defining methods for implementing cache behavior.
+ */
+public interface ICache { void put(String key, Integer value);
     int get(String key);
     void remove(String key);
     // optional methods to implement
@@ -10,3 +11,4 @@ public interface ICache {
     int getSize();
     boolean containsKey(String key);
 }
+
